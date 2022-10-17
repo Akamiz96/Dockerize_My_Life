@@ -1,3 +1,4 @@
+from email import message
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -31,6 +32,16 @@ def get_item(id):
 
 @app.route('/items', methods=['GET'])
 def get_items():
+  try:
+    items = db.session.query(Item).all()
+    return render_template('list.html', items=items)
+  except Exception as e:
+    error_text = "<p>The error:<br>" + str(e) + "</p>"
+    hed = '<h1>Something is broken.</h1>'
+    return hed + error_text
+
+@app.route('/itemsraw', methods=['GET'])
+def get_itemsraw():
   items = []
   for item in db.session.query(Item).all():
     del item.__dict__['_sa_instance_state']
@@ -39,11 +50,11 @@ def get_items():
 
 @app.route('/items', methods=['POST'])
 def create_item():
-  title = request.form.get('title', "")
-  content = request.form.get('content', "")
+  title = request.form['title']
+  content = request.form['content']
   db.session.add(Item(title,content))
   db.session.commit()
-  return "item created"
+  return render_template('create.html', message="Item Created")
 
 @app.route('/items/<id>', methods=['PUT'])
 def update_item(id):
@@ -65,7 +76,7 @@ def create_item_page():
 
 @app.route('/', methods=['GET'])
 def hello_world():
-  return "<h1>Hello World!</h1>"
+  return render_template('index.html')
 
 @app.route('/env', methods=['GET'])
 def env():
